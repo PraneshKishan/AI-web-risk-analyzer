@@ -1,0 +1,123 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Website Risk Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f8fc;
+      padding: 40px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 12px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 25px;
+      margin-top: 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      margin-top: 30px;
+      text-align: left;
+      padding: 15px;
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .risk-Secure { color: green; font-weight: bold; }
+    .risk-Warning { color: orange; font-weight: bold; }
+    .risk-HighRisk { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 AI Website Risk Analyzer</h1>
+    <p>Enter a website URL to check its security level</p>
+
+    <input type="text" id="urlInput" placeholder="e.g., https://example.com" />
+    <br />
+    <button onclick="analyzeWebsite()">Check Risk</button>
+
+    <div id="output" class="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    async function analyzeWebsite() {
+      const url = document.getElementById("urlInput").value.trim();
+      const output = document.getElementById("output");
+
+      if (!url) {
+        alert("Please enter a website URL.");
+        return;
+      }
+
+      output.innerHTML = "🔄 Analyzing website...";
+      output.style.display = "block";
+
+      try {
+        const res = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "fail") {
+          output.innerHTML = `<p style="color: red;">❌ ${data.message}</p>`;
+          return;
+        }
+
+        const riskClass = "risk-" + data.prediction.replace(/\s+/g, "");
+
+        output.innerHTML = `
+          <p>🔐 <strong>Risk Level:</strong> 
+            <span class="${riskClass}">${data.prediction}</span>
+          </p>
+          <p>🛑 <strong>Issues Detected:</strong><br/>
+            ${data.problems.length > 0 ? data.problems.map(p => `• ${p}`).join("<br/>") : "None"}
+          </p>
+          <p>💡 <strong>Recommendations:</strong><br/>
+            ${data.suggestions.length > 0 ? data.suggestions.map(s => `• ${s}`).join("<br/>") : "All good!"}
+          </p>
+          <details>
+            <summary>📊 Raw Features</summary>
+            <pre>${JSON.stringify(data.raw_features, null, 2)}</pre>
+          </details>
+        `;
+      } catch (err) {
+        output.innerHTML = `<p style="color: red;">❌ Internal error. Please try again later.</p>`;
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
